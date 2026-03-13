@@ -26,9 +26,9 @@ async function answerQuestion(question, history = []) {
   let rawContext = topDocs
     .map((d) => `Fonte: ${d.source}\n${d.content}`)
     .join("\n\n");
-  // Limita o contexto a no máximo 4000 caracteres
-  if (rawContext.length > 8000) {
-    rawContext = rawContext.slice(0, 8000) + "...";
+  // Limita o contexto a no máximo 7000 caracteres
+  if (rawContext.length > 4000) {
+    rawContext = rawContext.slice(0, 4000) + "...";
   }
   const focusedContext = extractRelevantText(rawContext, question);
   const ollamaOk = await checkOllamaHealth(url, apiKey);
@@ -518,12 +518,20 @@ function buildHeaders(apiKey) {
 
 function logUsage(data) {
   if (!data || typeof data !== "object") return;
-  const prompt = typeof data.prompt_eval_count === "number" ? data.prompt_eval_count : null;
-  const evalCount = typeof data.eval_count === "number" ? data.eval_count : null;
-  const total = typeof data.total_duration === "number" ? data.total_duration : null;
-  const load = typeof data.load_duration === "number" ? data.load_duration : null;
-  const promptDur = typeof data.prompt_eval_duration === "number" ? data.prompt_eval_duration : null;
-  const evalDur = typeof data.eval_duration === "number" ? data.eval_duration : null;
+  const prompt =
+    typeof data.prompt_eval_count === "number" ? data.prompt_eval_count : null;
+  const evalCount =
+    typeof data.eval_count === "number" ? data.eval_count : null;
+  const total =
+    typeof data.total_duration === "number" ? data.total_duration : null;
+  const load =
+    typeof data.load_duration === "number" ? data.load_duration : null;
+  const promptDur =
+    typeof data.prompt_eval_duration === "number"
+      ? data.prompt_eval_duration
+      : null;
+  const evalDur =
+    typeof data.eval_duration === "number" ? data.eval_duration : null;
 
   if (prompt === null && evalCount === null && total === null) return;
 
@@ -532,7 +540,8 @@ function logUsage(data) {
   if (evalCount !== null) parts.push(`output_tokens=${evalCount}`);
   if (total !== null) parts.push(`total_ms=${Math.round(total / 1e6)}`);
   if (load !== null) parts.push(`load_ms=${Math.round(load / 1e6)}`);
-  if (promptDur !== null) parts.push(`prompt_ms=${Math.round(promptDur / 1e6)}`);
+  if (promptDur !== null)
+    parts.push(`prompt_ms=${Math.round(promptDur / 1e6)}`);
   if (evalDur !== null) parts.push(`eval_ms=${Math.round(evalDur / 1e6)}`);
 
   if (parts.length > 0) {

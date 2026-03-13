@@ -6,13 +6,16 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "ingest-docs": "node src/scripts/ingestDocs.js"
+    "ingest-docs": "node src/scripts/ingestDocs.js",
+    "reindex": "node src/scripts/ingestDocs.js",
+    "test-chunking": "node src/scripts/testChunking.js"
   },
   "dependencies": {
     "canvas": "^2.11.2",
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
     "express": "^4.19.2",
+    "faiss-node": "^0.5.1",
     "morgan": "^1.10.0",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^4.2.67",
