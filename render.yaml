@@ -13,6 +13,8 @@ services:
         value: ${COHERE_API_KEY}
       - key: USE_QDRANT
         value: "true"
+      - key: QDRANT_URL
+        value: "http://astro-chat-qdrant:6333"
       - key: SQLITE_DB_PATH
         value: "/app/data/metadata.sqlite"
     disks:

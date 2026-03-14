@@ -4,12 +4,14 @@ FROM node:20-bullseye-slim
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV PORT=3001
 
-# Install build dependencies for native modules (better-sqlite3)
+# Install build dependencies for native modules (better-sqlite3) and runtime tools
 RUN apt-get update && \
 		apt-get install -y --no-install-recommends \
 			build-essential python3 pkg-config libc6-dev libsqlite3-dev ca-certificates \
-			libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev libpng-dev librsvg2-dev && \
+			libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev libpng-dev librsvg2-dev \
+			wget curl && \
 		rm -rf /var/lib/apt/lists/*
 
 # Copy package files and install production deps (will compile native modules)
@@ -24,10 +26,10 @@ RUN mkdir -p /app/data
 
 # Cleanup build packages to keep image small (optional)
 RUN apt-get purge -y --auto-remove build-essential python3 pkg-config && \
-		rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 EXPOSE 3001
 
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -q -O - http://localhost:3001/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD /bin/sh -c 'wget -q -O - "http://localhost:${PORT:-3001}/health" || exit 1'
 
 CMD ["node", "src/server.js"]
