@@ -1,19 +1,29 @@
-FROM node:20-alpine
+FROM node:22-bullseye-slim
 
-# Create app directory
+# Use Debian-based image so native modules can be compiled reliably
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install dependencies
-COPY package.json package-lock.json* ./
-RUN npm ci --production
+# Install build dependencies for native modules (better-sqlite3)
+RUN apt-get update && \
+		apt-get install -y --no-install-recommends \
+			build-essential python3 pkg-config libc6-dev libsqlite3-dev ca-certificates && \
+		rm -rf /var/lib/apt/lists/*
 
-# Copy source
+# Copy package files and install production deps (will compile native modules)
+COPY package.json package-lock.json* ./
+RUN npm ci --production --unsafe-perm
+
+# Copy app source
 COPY . .
 
 # Ensure data dir exists for optional SQLite persistence
 RUN mkdir -p /app/data
+
+# Cleanup build packages to keep image small (optional)
+RUN apt-get purge -y --auto-remove build-essential python3 pkg-config && \
+		rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 EXPOSE 3001
 
