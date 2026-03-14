@@ -1,4 +1,4 @@
-FROM node:22-bullseye-slim
+FROM node:20-bullseye-slim
 
 # Use Debian-based image so native modules can be compiled reliably
 WORKDIR /app
@@ -8,7 +8,8 @@ ENV NODE_ENV=production
 # Install build dependencies for native modules (better-sqlite3)
 RUN apt-get update && \
 		apt-get install -y --no-install-recommends \
-			build-essential python3 pkg-config libc6-dev libsqlite3-dev ca-certificates && \
+			build-essential python3 pkg-config libc6-dev libsqlite3-dev ca-certificates \
+			libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev libpng-dev librsvg2-dev && \
 		rm -rf /var/lib/apt/lists/*
 
 # Copy package files and install production deps (will compile native modules)
