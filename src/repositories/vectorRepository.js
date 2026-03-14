@@ -12,6 +12,24 @@ try {
   console.warn("FAISS indisponivel, usando fallback:", err.message || err);
 }
 
+let qdrantRepo = null;
+try {
+  if (process.env.USE_QDRANT === "true" || process.env.QDRANT_URL) {
+    qdrantRepo = require("./qdrantRepository").qdrantRepository;
+  }
+} catch (e) {
+  console.warn("Qdrant client not available:", e && e.message ? e.message : e);
+}
+
+let sqliteRepo = null;
+try {
+  if (process.env.USE_SQLITE === 'true' || process.env.SQLITE_DB_PATH) {
+    sqliteRepo = require('./sqliteRepository').sqliteRepository;
+  }
+} catch (e) {
+  console.warn('SQLite repo not available:', e && e.message ? e.message : e);
+}
+
 let cache = { meta: null, faissIndex: null, loadedAt: 0 };
 const CACHE_TTL_MS = 30_000;
 
@@ -166,6 +184,36 @@ async function search(question, topK = 3) {
         out.push({ ...docs[label], score: distances[i] });
       }
       if (out.length > 0) return out;
+    }
+  }
+  // If Qdrant is enabled, try it before JS fallback
+  if (qdrantRepo) {
+    try {
+      const qVec = await embeddingService.embedText(question);
+      if (qVec && qVec.length > 0) {
+        const qRes = await qdrantRepo.search(qVec, topK);
+        if (qRes && qRes.length > 0) {
+          // If sqliteRepo exists, use it to fetch authoritative metadata by id
+          if (sqliteRepo) {
+            const ids = qRes.map((r) => Number(r.id));
+            try {
+              const docs = sqliteRepo.getDocsByIds(ids);
+              if (docs && docs.length > 0) {
+                const scoreMap = new Map(qRes.map((r) => [Number(r.id), r.score]));
+                return docs.map((d) => ({ ...d, score: scoreMap.get(d.id) || 0 }));
+              }
+            } catch (e) {
+              console.warn('SQLite getDocsByIds failed:', e && e.message ? e.message : e);
+            }
+          }
+          return qRes.map((r) => ({ ...r, score: r.score }));
+        }
+      }
+    } catch (err) {
+      console.warn(
+        'Qdrant search failed, continuing fallback:',
+        err && err.message ? err.message : err,
+      );
     }
   }
 

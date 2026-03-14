@@ -1,5 +1,6 @@
 const { promptBuilder } = require("../utils/promptBuilder");
 const { vectorRepository } = require("../repositories/vectorRepository");
+const cache = require("../utils/lruCache");
 
 let ollamaHealthCache = { ok: true, checkedAt: 0, message: "" };
 
@@ -8,9 +9,21 @@ async function answerQuestion(question, history = []) {
   if (greeting) {
     return greeting;
   }
-
+  const cacheTtl = parseInt(process.env.Q_CACHE_TTL_MS || "600000", 10);
+  // cache keys: prefer session-aware key, but also support question-only hits
   const historyText = formatHistory(history);
-  const docs = await vectorRepository.search(question, 5);
+  const questionKey = normalizeText(question);
+  const sessionKey = `${questionKey}|${historyText}`;
+
+  // 1) try session-aware cache (most precise)
+  const sessionCached = cache.get(sessionKey);
+  if (sessionCached) return sessionCached;
+
+  // 2) try question-only cache as a fast fallback (useful when history changes)
+  const questionCached = cache.get(questionKey);
+  if (questionCached) return questionCached;
+
+  const docs = await vectorRepository.search(question, 3);
   const hasDocs = docs && docs.length > 0;
 
   if (!hasDocs) {
@@ -27,8 +40,8 @@ async function answerQuestion(question, history = []) {
     .map((d) => `Fonte: ${d.source}\n${d.content}`)
     .join("\n\n");
   // Limita o contexto a no máximo 7000 caracteres
-  if (rawContext.length > 4000) {
-    rawContext = rawContext.slice(0, 4000) + "...";
+  if (rawContext.length > 7000) {
+    rawContext = rawContext.slice(0, 7000) + "...";
   }
   const focusedContext = extractRelevantText(rawContext, question);
   const ollamaOk = await checkOllamaHealth(url, apiKey);
@@ -77,7 +90,23 @@ async function answerQuestion(question, history = []) {
     const text = data && data.response ? String(data.response).trim() : "";
 
     if (text.length > 0) {
-      return formatAnswer(text);
+      const out = formatAnswer(text);
+      try {
+        // set both session-aware and question-only caches to improve repeated-query latency
+        try {
+          cache.set(sessionKey, out, cacheTtl);
+        } catch (e) {
+          /* ignore */
+        }
+        try {
+          cache.set(questionKey, out, cacheTtl);
+        } catch (e) {
+          /* ignore */
+        }
+      } catch (e) {
+        // ignore outer cache errors
+      }
+      return out;
     }
   } catch (err) {
     console.warn("Ollama unavailable, using fallback:", err.message || err);

@@ -1,0 +1,43 @@
+# Example render.yaml for deploying both the web service and Qdrant on Render
+# Adjust plans, sizes and env vars to your account and needs
+
+services:
+  - type: web
+    name: astro-chat-web
+    env: docker
+    dockerfilePath: Dockerfile
+    autoDeploy: true
+    plan: starter
+    envVars:
+      - key: COHERE_API_KEY
+        value: ${COHERE_API_KEY}
+      - key: USE_QDRANT
+        value: "true"
+      - key: SQLITE_DB_PATH
+        value: "/app/data/metadata.sqlite"
+    disks:
+      - name: app-data
+        mountPath: /app/data
+        sizeGb: 1
+
+  - type: service
+    name: astro-chat-qdrant
+    env: docker
+    plan: starter
+    dockerImage: qdrant/qdrant:latest
+    autoDeploy: true
+    envVars:
+      - key: QDRANT__SERVICE__GRPC_PORT
+        value: "6334"
+    disks:
+      - name: qdrant-data
+        mountPath: /qdrant/storage
+        sizeGb: 10
+    ports:
+      - internalPort: 6333
+        externalPort: 6333
+
+# Notes:
+# - This is an example template: Render's YAML schema is flexible; adapt keys (plan, disk sizes)
+# - After deploying, set COHERE_API_KEY and any other secrets in Render dashboard
+# - Ensure your web service's QDRANT_URL is set to http://astro-chat-qdrant:6333 or the external address
