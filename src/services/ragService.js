@@ -71,6 +71,7 @@ async function answerQuestion(question, history = []) {
   });
 
   try {
+    const temperature = Number(process.env.LLM_TEMPERATURE || 0.7);
     const response = await fetch(url, {
       method: "POST",
       headers: buildHeaders(apiKey),
@@ -78,6 +79,7 @@ async function answerQuestion(question, history = []) {
         model,
         prompt,
         stream: false,
+        temperature,
       }),
     });
 
@@ -445,6 +447,7 @@ async function summarizeContext({
   ].join("\n");
 
   try {
+    const temperature = Number(process.env.LLM_TEMPERATURE || 0.7);
     const response = await fetch(url, {
       method: "POST",
       headers: buildHeaders(apiKey),
@@ -452,6 +455,7 @@ async function summarizeContext({
         model,
         prompt,
         stream: false,
+        temperature,
       }),
     });
 
@@ -503,6 +507,7 @@ async function condenseAnswer({
   ].join("\n");
 
   try {
+    const temperature = Number(process.env.LLM_TEMPERATURE || 0.7);
     const response = await fetch(url, {
       method: "POST",
       headers: buildHeaders(apiKey),
@@ -510,6 +515,7 @@ async function condenseAnswer({
         model,
         prompt,
         stream: false,
+        temperature,
       }),
     });
 
