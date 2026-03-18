@@ -1,19 +1,58 @@
-Ganho rápido (baixo esforço)
+﻿# Roadmap de Evolução (RAG) — Checklist
 
-Melhorar o “retrieval”: hoje é só contagem de tokens. Troque por embeddings reais (ex.: all-MiniLM-L6-v2) e busca por similaridade (cosine). Isso aumenta muito a precisão.
-Melhorar o chunking: reduzir para 200–300 palavras com sobreposição (overlap). Ajuda a pegar o trecho certo sem poluir o contexto.
-Ajustar o prompt: hoje ele pede para “não copiar trechos” e “usar lista/tabela”, mas não define formato de resposta. Um template mais claro aumenta assertividade.
-Impacto médio
+## Princípios
 
-Re-ranking: depois do topK por embedding, faça um re-ranking com LLM (ou um modelo cross-encoder leve).
-Citação de fontes: ao responder, incluir “Fonte: doc#trecho” aumenta confiança e reduz invenção.
-Threshold de confiança: se a similaridade for baixa, responder “não encontrei” em vez de chutar.
-Impacto alto
+- [ ] Priorizar qualidade da resposta e rastreabilidade (fontes)
+- [ ] Manter arquitetura simples com ganhos incrementais
+- [ ] Evitar dependências pesadas sem ganho claro
 
-Métricas: logar quais perguntas falham e ajustar index/prompt com base nisso.
-Conversa: usar histórico de forma controlada (resumo do histórico, não tudo).
-Se quiser, eu posso implementar um desses caminhos agora. Diga qual prioridade:
+## Fase 0 — Preparação (1–2 dias)
 
-Embeddings reais + busca por similaridade
-Melhor chunking + overlap + reindex
-Prompt melhor + respostas com fonte + limiar de confiança
+- [ ] Atualizar `FLUXO.MD` para refletir o código atual (parâmetros, funções e nomes reais)
+- [ ] Corrigir `.env.example` (duplicações e comentários colados)
+- [ ] Padronizar encoding UTF-8 nos arquivos de texto com mojibake
+- [ ] Revisar `README.md` para alinhamento com o fluxo atual
+- [ ] Adicionar validação mínima de configuração na inicialização (ex.: variáveis obrigatórias)
+
+## Fase 1 — Observabilidade e Qualidade (Semana 1)
+
+- [ ] Log estruturado por requisição com `requestId`
+- [ ] Métricas básicas: latência por etapa, taxa de cache hit, taxa de fallback
+- [ ] Retornar as fontes no response do `/chat`
+- [ ] Criar conjunto mínimo de avaliação (20–50 perguntas)
+- [ ] Criar script simples de avaliação manual (CSV ou JSON com perguntas/answers)
+
+## Fase 2 — Retrieval Moderno (Semana 2)
+
+- [ ] Implementar busca híbrida (BM25 + vetor) como fallback preferencial
+- [ ] Adicionar re-ranking leve (cross-encoder ou LLM pequeno) no topK
+- [ ] Adicionar limiar de confiança para responder “não encontrei”
+- [ ] Exibir “Fontes usadas” na resposta final
+
+## Fase 3 — Ingestão e Contexto (Semana 3)
+
+- [ ] Migrar chunking por palavras para chunking por tokens ou semântico
+- [ ] Deduplicar conteúdo e melhorar limpeza de OCR
+- [ ] Implementar “context budget” dinâmico (topK e tamanho por pergunta)
+- [ ] Ajustar prompts para formato de resposta consistente
+
+## Fase 4 — Produção e Escala (Semana 4)
+
+- [ ] Persistência de histórico e cache em Redis
+- [ ] Rate limiting e autenticação no `/chat`
+- [ ] Healthcheck completo (LLM + embeddings + banco)
+- [ ] Documentar runbooks de operação e troubleshooting
+
+## Entregáveis por fase
+
+- [ ] Fase 0: documentação e configuração confiáveis
+- [ ] Fase 1: visibilidade do desempenho e qualidade
+- [ ] Fase 2: ganho claro de precisão e confiança
+- [ ] Fase 3: respostas mais consistentes e contextuais
+- [ ] Fase 4: prontidão para ambiente multi-instância
+
+## Próximos passos
+
+- [ ] Confirmar foco principal: qualidade de resposta vs robustez de produção
+- [ ] Escolher mecanismo de re-ranking (LLM local vs cross-encoder)
+- [ ] Definir conjunto inicial de perguntas de avaliação
