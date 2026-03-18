@@ -25,17 +25,28 @@ npm run reindex
 ```
 
 Notes:
+
 - The project supports multiple embedding providers; Cohere is preferred when `COHERE_API_KEY` is set.
 - There is a deterministic local fallback for development when no embedding endpoint is reachable.
 - Tune `EMBED_BATCH_SIZE` in `.env` to respect rate limits.
 
 ## anexar um novo documento
 
-# opcional: verifique o provider de embeddings
-node src/scripts/checkEmbedding.js
+1- Coloque a documentação em docs (ou onde seu loader lê).
+2- Re-gerar o index (chunking + embeddings):
 
-# reindex (sem FAISS)
+```bash
 node src/scripts/ingestDocs.js
+```
 
-# reindex com FAISS (se quiser criar index.faiss)
-ENABLE_FAISS=true node src/scripts/ingestDocs.js
+3- Atualizar/guardar metadados em SQLite:
+
+```bash
+node src/scripts/sqlite_upsert_from_index.js
+```
+
+4- Upsert dos vetores para Qdrant:
+
+```bash
+node src/scripts/qdrant_upsert_from_index.js
+```
